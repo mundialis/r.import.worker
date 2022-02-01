@@ -219,6 +219,7 @@ def main():
     max_tries = 10
     next_try = True
     tries = 0
+    noOverlap = False
     while next_try:
         tries += 1
         cmd = grass.Popen(
@@ -232,7 +233,14 @@ def main():
         for resp_line in resp:
             resp_text += resp_line.decode("utf-8")
         if (
-            "Input raster does not overlap with current computational region"
+            "\n0..3..6..9..12..15..18..21..24..27..30..33..36..39..42..45..48"
+            "..51..54..57..60..63..66..69..72..75..78..81..84..87..90..93..96"
+            "..99..100\n"
+            in resp_text
+        ):
+            next_try = False
+        elif (
+            "Input raster does not overlap current computational region"
             in resp_text
         ):
             grass.warning(
@@ -243,24 +251,61 @@ def main():
                 % options["input"]
             )
             next_try = False
-        elif "The reprojected raster <%s> is empty" % options["output"] in resp_text:
+            noOverlap = True
+        elif (
+            "The reprojected raster <%s> is empty" % options["output"]
+            in resp_text
+        ):
             grass.warning(
-                _("Only no-data values found in current region for input raster <%s>")
-                % options["input"]
+                _(
+                    "Only no-data values found in current region for input "
+                    f"raster <{options['input']}>"
+                )
             )
             next_try = False
         elif "cpl_vsil_gzip.cpp" in resp_text and tries < max_tries:
             sleep(10)
             next_try = True
+            msg = "Retrying %d/%d (%s) ..." % (
+                tries,
+                max_tries,
+                options["input"],
+            )
+            grass.warning(msg)
+        elif "503" in resp_text:
+            msg = resp_text + " (%s)" % options["input"]
+            if tries < max_tries:
+                sleep(10)
+                next_try = True
+                msg += " Retrying %d/%d ..." % (tries, max_tries)
+            else:
+                next_try = False
+            grass.warning(msg)
         elif resp_text != "":
-            next_try = False
-            grass.fatal(_(resp_text))
+            msg = f"{resp_text} ({options['input']})"
+            if tries < max_tries:
+                sleep(10)
+                next_try = True
+                msg += f" Retrying {tries}/{max_tries} ..."
+            else:
+                next_try = False
+            grass.warning(msg)
         else:
             next_try = False
 
-    if not grass.find_file(
-        name=options["output"], element="raster", mapset=options["newmapset"]
-    )["file"]:
+    if (
+        not grass.find_file(
+            name=options["output"],
+            element="raster",
+            mapset=options["newmapset"],
+        )["file"]
+        and not grass.find_file(
+            name=options["output"],
+            element="group",
+            mapset=options["newmapset"],
+        )["file"]
+        and noOverlap is not True
+    ):
         grass.fatal(_("ERROR %s" % options["output"]))
 
     grass.utils.try_remove(newgisrc)
