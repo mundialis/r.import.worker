@@ -34,7 +34,7 @@
 # % required: yes
 # % multiple: no
 # % key_desc: name
-# % description: Name of new mapset to run i.sentinel.mask
+# % description: Name of new mapset to run r.import
 # % guisection: Required
 # %end
 
