@@ -208,11 +208,13 @@ def main():
     for opt, val in options.items():
         if opt != "newmapset" and val:
             kwargs[opt] = val
-    flagstr = ""
+    if True in flags.values():
+        flagstr = "-"
+    else:
+        flagstr = ""
     for flag, val in flags.items():
         if val:
             flagstr += flag
-
     kwargsstr = ""
     for key, val in kwargs.items():
         kwargsstr += " %s='%s'" % (key, val)
@@ -223,7 +225,7 @@ def main():
     while next_try:
         tries += 1
         cmd = grass.Popen(
-            "r.import --q %s" % kwargsstr,
+            f"r.import --q {kwargsstr} {flagstr}",
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
