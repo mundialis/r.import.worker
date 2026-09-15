@@ -23,8 +23,3 @@ jobs:
       - name: Run Flake8
         run: |
           flake8 --config=.flake8 --count --statistics --show-source --jobs=$(nproc) .
-      - permissions:
-          contents: read
-          packages: read
-          # To report GitHub Actions status checks
-          statuses: write
